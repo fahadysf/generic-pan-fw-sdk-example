@@ -169,30 +169,6 @@ def initialize_fw_objs(cfgdict):
 
     return fw_objs
 
-
-def get_gp_sattelite_status(fw_obj, gp_gateway):
-    """[summary] Tests to see the status of GP Satellite gateway with provided IP
-    Arguments:
-        fw_obj {pan} -- [description]
-        gp_gateway {str} -- [description] IP address of GP Gateway as string
-    """
-    try:
-        r = fw_obj.op(
-            f'<show><global-protect-satellite><current-gateway><gateway>{gp_gateway}</gateway></current-gateway></global-protect-satellite></show>', cmd_xml=False, xml=True).decode('utf-8')
-        if ('initializing' in r) or ('Initializing' in r):
-            return False
-        elif ('Tunnel monitoring up' in r):
-            print(r)
-            return True
-
-    except BaseException as e:
-        app_log.error(f'Failed to run query on firewall - {fw_obj}')
-        app_log.exception(e.message)
-        raise
-    return False
-
-
-def reset_gp_sattelite_session(fw_obj, gp_gateway, gp_satellite_name):
     """[summary] Resets the GP Satellite connection
     Arguments:
         fw_obj {pan} -- [description]
@@ -227,7 +203,7 @@ def main():
             fw_active = fw
 
         app_log.info(
-            f'Checking for GP Satellite connection status on Firewall {fw.hostname}')
+            f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Firewall {fw.hostname}')
 
         # Execute your logic here.
 
