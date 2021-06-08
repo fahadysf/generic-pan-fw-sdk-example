@@ -1,0 +1,4 @@
+.vscode/
+config.yml
+venv/
+logs/ngfw-control-script.log

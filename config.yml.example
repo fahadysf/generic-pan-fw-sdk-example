@@ -1,0 +1,33 @@
+# This is the config file in YAML format having the Firewalls and GP Gateway 
+# names that need to be monitored for multiple logon sesisons.
+
+# WARNING: DO NOT REMOVE OR RENAME THIS FILE. MAKE A COPY AND MODIFY THAT 
+# TO MAKE YOUR CONFIG. The config file "config.yml" will be overwritten 
+# automatically by the script in case API Keys are not specified and 
+# WARNING: All comments / instructions in them will be lost when config.yml
+# is overwritten.
+
+# As an example for a stand-alone firewall.
+
+log_path: './logs'          # Location of log files for this script
+daemon_mode: true           # run as a continous process
+check_interval: 60          # Number of seconds to wait before re-running (30 is default)
+
+# Firewalls to be monitored.
+# Note 1: In case of HA firewalls, only one of the firewalls should be defined
+#         in the HA section and the peer firewall IP/Hostname should be 
+#         provided in the ha_peer_ip field under the firewall entry
+
+firewalls:
+  # Example of a standalone firewall without HA
+  # IP address of the firewall
+  "192.168.3.1": 
+    api_key: "<API-Key-for-user>" # Leave blank to generate new
+    gp_gateway: "78.100.89.251"   # This key is specific to the GP Satellite check scenario
+    gp_satellite_name: ""         # This key is specific to the GP Satellite check scenario
+    ha_peer_ip:       # Leave this empty
+    whitelist_users:
+      - user1
+      - user2 
+
+    # Any number of arbitrary config keys can be added and used in your code
