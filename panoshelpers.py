@@ -1,10 +1,18 @@
 import logging
 import os
 import sys
+import getpass
 import logging
 import logging.handlers as lh
 import xml.dom.minidom as minidom
 from xml.etree import ElementTree
+
+try:
+    import yaml
+except ImportError:
+    raise ValueError(
+        "PyYAML module not available, please install it by running 'python3 -m pip install PyYAML'")
+
 
 try:
     from panos.firewall import Firewall

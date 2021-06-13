@@ -23,18 +23,8 @@ https://www.paloaltonetworks.com/legal/script-software-license-1-0.pdf
 
 """
 
-import os
-import sys
 import time
-import getpass
 import panoshelpers
-
-
-try:
-    import yaml
-except ImportError:
-    raise ValueError(
-        "PyYAML module not available, please install it by running 'python3 -m pip install PyYAML'")
 
 
 def main():
