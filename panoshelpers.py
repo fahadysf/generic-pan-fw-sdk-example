@@ -5,6 +5,7 @@ import getpass
 import logging
 import logging.handlers as lh
 import xml.dom.minidom as minidom
+import xmltodict
 from xml.etree import ElementTree
 
 try:
@@ -148,7 +149,7 @@ def initialize_panorama_objs(cfgdict):
                 panorama_dict[panorama]['api_key'] = api_key
                 config_dirty = 1
             else:
-                panorama_obj = Firewall(
+                panorama_obj = Panorama(
                     panorama, api_key=panorama_dict[panorama]['api_key'], timeout=5)
 
             if get_config_param(panorama_dict[panorama], 'ha_peer_ip') != None:
@@ -177,6 +178,11 @@ def prettify(elem):
     data_str = reparsed.toprettyxml(indent="\t")
     data_str = os.linesep.join([s for s in data_str.splitlines() if s.strip()])
     return data_str
+
+
+def get_system_info(obj):
+    data = obj.op("show system info")
+    return xmltodict.parse(ElementTree.tostring(data, encoding='UTF-8', method='xml'))
 
 
 # Read Config

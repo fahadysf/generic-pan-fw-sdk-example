@@ -25,6 +25,8 @@ https://www.paloaltonetworks.com/legal/script-software-license-1-0.pdf
 
 import time
 import panoshelpers
+import panoramahelpers
+import json
 
 
 def main():
@@ -49,10 +51,15 @@ def main():
             f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
 
         # Execute your logic here.
-        data = panorama_active.op("show system info")
-        data_str = panoshelpers.prettify(data)
-        print(data_str)
+        # data_str = panoshelpers.get_system_info(panorama_active)
+        # print(json.dumps(data_str, indent=4, sort_keys=True))
+
+        dglist = panoramahelpers.get_devicegroups(panorama_active)
+        print(dglist)
+        pre_rulebase = panoramahelpers.get_pre_rules(dglist[1])
+        print(pre_rulebase)
         # Write more logic here (Pending)
+
         # --------
         fail_counter = 0
         # Write some actual logic using the panorama_active instance to execute stuff on the active panorama.
