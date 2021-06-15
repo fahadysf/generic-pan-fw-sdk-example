@@ -35,37 +35,27 @@ def main():
     Returns:
         [type]: [description]
     """
-    # Cycle through the Panoramas defined in the config.
-    panorama_objs = panoshelpers.initialize_panorama_objs(cfgdict)
-    for panorama in panorama_objs:
-        if panorama.ha_peer != None:
-            panorama.refresh_ha_active()
-            panorama_active = panorama.active()
-            cfgdict['firewalls'][panorama_active.hostname] = cfgdict['firewalls'][panorama.hostname]
-            app_log.info(
-                f"HA enabled on firewall. Active firewall is {panorama_active.hostname}")
-        else:
-            panorama_active = panorama
+    panorama = panoramahelpers.get_active_panorama(cfgdict)
 
-        app_log.info(
-            f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
+    # Execute your logic here.
+    # data_str = panoshelpers.get_system_info(panorama)
+    # print(json.dumps(data_str, indent=4, sort_keys=True))
 
-        # Execute your logic here.
-        # data_str = panoshelpers.get_system_info(panorama_active)
-        # print(json.dumps(data_str, indent=4, sort_keys=True))
+    app_log.info(
+        f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
+    dglist = panoramahelpers.get_devicegroups(panorama)
+    print(dglist)
+    pre_rulebase = panoramahelpers.get_pre_rules(
+        panorama, dglist[0])
+    print(pre_rulebase)
 
-        dglist = panoramahelpers.get_devicegroups(panorama_active)
-        print(dglist)
-        pre_rulebase = panoramahelpers.get_pre_rules(dglist[1])
-        print(pre_rulebase)
-        # Write more logic here (Pending)
-
-        # --------
-        fail_counter = 0
-        # Write some actual logic using the panorama_active instance to execute stuff on the active panorama.
-        # ##
-        app_log.info(
-            f'Process completed on Panorama {panorama_active.hostname}.')
+    # Write more logic here (Pending)
+    # --------
+    fail_counter = 0
+    # Write some actual logic using the panorama instance to execute stuff on the active panorama.
+    # ##
+    app_log.info(
+        f'Process completed on Panorama {panorama.hostname}.')
     return True
 
 
