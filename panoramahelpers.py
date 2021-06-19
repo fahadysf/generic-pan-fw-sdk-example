@@ -12,7 +12,7 @@ def get_active_panorama(cfgdict):
             panorama_active = panorama.active()
             cfgdict['panoramas'][panorama_active.hostname] = cfgdict['panoramas'][panorama.hostname]
             app_log.info(
-                f"HA enabled on firewall. Active firewall is {panorama_active.hostname}")
+                f"HA enabled on Panorama. Active firewall is {panorama_active.hostname}")
         else:
             panorama_active = panorama
 

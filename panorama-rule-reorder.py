@@ -29,8 +29,32 @@ import panoramahelpers
 import json
 
 
+def make_shadowed_rule_list(jsdata):
+    shadow_rule_dict = dict()
+    for item in jsdata['response']['result']['shadow-warnings-count']['entry']['entry']:
+        shadow_rule_dict[item['@name']] = {
+            "uuid": item['@uuid'],
+            "shadowcount": int(item['#text'])
+        }
+    return shadow_rule_dict
+
+
+def get_shadow_details(ruledata, panorama, dg, fw):
+    uuid = ruledata['uuid']
+    get_shadowed_rule_details = f'<show><shadow-warning><warning-message><device-group>{dg.name}</device-group><device-serial>{fw.serial}</device-serial><uuid>{uuid}</uuid></warning-message></shadow-warning></show>'
+    res = panoshelpers.get_xml_op(panorama,
+                                  cmd=get_shadowed_rule_details, cmd_xml=False, xml=False)
+    shadow_list = res['response']['result']['warning-msg']['member']
+    if type(shadow_list) == list:
+        shadow_list = list(map(lambda x: x[8:-1], shadow_list))
+    else:
+        shadow_list = [shadow_list[8:-1]]
+    return shadow_list
+
+
 def main():
-    """This is a generic example of cycling through HA firewalls and doing something via API.
+    """This is a generic example of cycling through HA firewalls and doing
+    something via API.
 
     Returns:
         [type]: [description]
@@ -45,9 +69,23 @@ def main():
         f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
     dglist = panoramahelpers.get_devicegroups(panorama)
     print(dglist)
-    pre_rulebase = panoramahelpers.get_pre_rules(
-        panorama, dglist[0])
-    print(pre_rulebase)
+    dg = dglist[0]
+    fw = dg.children[0]
+    get_shadowed_rules_cmd = f'<show><shadow-warning><count><device-serial>{fw.serial}</device-serial></count></shadow-warning></show>'
+    res = panoshelpers.get_xml_op(panorama,
+                                  cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
+    shadowed_rules = make_shadowed_rule_list(res)
+    #print(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+    for r in shadowed_rules:
+        shadowed_rules[r]['shadow_list'] = [r] + \
+            get_shadow_details(shadowed_rules[r], panorama, dg, fw)
+        print(
+            f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}"
+        )
+
+    # pre_rulebase = panoramahelpers.get_pre_rules(
+    #    panorama, dglist[0])
+    # print(pre_rulebase)
 
     # Write more logic here (Pending)
     # --------

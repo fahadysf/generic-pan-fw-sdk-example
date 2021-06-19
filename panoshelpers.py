@@ -63,7 +63,7 @@ def gen_api_key(panorama_addr, username='', password=''):
     if not (len(username) or len(password)):
         username, password = get_credentials(panorama_addr)
         try:
-            panorama_obj = Firewall(panorama_addr,
+            panorama_obj = Panorama(panorama_addr,
                                     api_username=username,
                                     api_password=password)
             if panorama_obj.api_key:
@@ -180,9 +180,12 @@ def prettify(elem):
     return data_str
 
 
-def get_system_info(obj):
-    data = obj.op("show system info")
-    return xmltodict.parse(ElementTree.tostring(data, encoding='UTF-8', method='xml'))
+def get_xml_op(obj, cmd="show system info", cmd_xml=True, xml=False):
+    data = obj.op(cmd, cmd_xml=cmd_xml)
+    if xml:
+        return ElementTree.tostring(data, encoding="unicode", method="xml")
+    else:
+        return xmltodict.parse(ElementTree.tostring(data, encoding='UTF-8', method='xml'))
 
 
 # Read Config
