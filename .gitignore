@@ -4,3 +4,4 @@ venv/
 logs/ngfw-control-script.log
 *.pyc
 output.txt
+workspace.code-workspace

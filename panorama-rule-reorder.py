@@ -31,17 +31,26 @@ import json
 
 def make_shadowed_rule_list(jsdata):
     shadow_rule_dict = dict()
-    for item in jsdata['response']['result']['shadow-warnings-count']['entry']['entry']:
-        shadow_rule_dict[item['@name']] = {
-            "uuid": item['@uuid'],
-            "shadowcount": int(item['#text'])
-        }
+    try:
+        for item in jsdata['response']['result']['shadow-warnings-count']['entry']['entry']:
+            shadow_rule_dict[item['@name']] = {
+                "uuid": item['@uuid'],
+                "shadowcount": int(item['#text'])
+            }
+    except:
+        app_log.error(f"JSDATA: {jsdata}")
+        raise
     return shadow_rule_dict
 
 
 def get_shadow_details(ruledata, panorama, dg, fw):
     uuid = ruledata['uuid']
-    get_shadowed_rule_details = f'<show><shadow-warning><warning-message><device-group>{dg.name}</device-group><device-serial>{fw.serial}</device-serial><uuid>{uuid}</uuid></warning-message></shadow-warning></show>'
+    get_shadowed_rule_details = f"""<show>
+    <shadow-warning><warning-message>
+    <device-group>{dg.name}</device-group>
+    <device-serial>{fw.serial}</device-serial>
+    <uuid>{uuid}</uuid></warning-message>
+    </shadow-warning></show>"""
     res = panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rule_details, cmd_xml=False, xml=False)
     shadow_list = res['response']['result']['warning-msg']['member']
@@ -68,18 +77,26 @@ def main():
     app_log.info(
         f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
     dglist = panoramahelpers.get_devicegroups(panorama)
-    print(dglist)
-    dg = dglist[0]
+    for i, name in enumerate(dglist):
+        print(f"{i} - {name}")
+    print("Choose your DG Number")
+    dgnum = int(input())
+    dg = dglist[dgnum]
     fw = dg.children[0]
-    get_shadowed_rules_cmd = f'<show><shadow-warning><count><device-serial>{fw.serial}</device-serial></count></shadow-warning></show>'
+    get_shadowed_rules_cmd = f"""<show>
+    <shadow-warning>
+    <count>
+    <device-serial>{fw.serial}</device-serial>
+    </count>
+    </shadow-warning></show>"""
     res = panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadowed_rules = make_shadowed_rule_list(res)
-    #print(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+    app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
-        print(
+        app_log.info(
             f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}"
         )
 
@@ -89,7 +106,6 @@ def main():
 
     # Write more logic here (Pending)
     # --------
-    fail_counter = 0
     # Write some actual logic using the panorama instance to execute stuff on the active panorama.
     # ##
     app_log.info(
