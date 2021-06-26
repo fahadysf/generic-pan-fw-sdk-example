@@ -1,6 +1,7 @@
 import panoshelpers
 from panos.panorama import DeviceGroup
 from panos.policies import PreRulebase, PostRulebase, SecurityRule
+from panos.objects import Tag
 
 
 def get_active_panorama(cfgdict):
@@ -29,14 +30,36 @@ def get_devicegroups(panorama_obj):
     return dglist
 
 
-def get_pre_rules(panorama_obj, dg_obj):
-    """Returns pre-rulebase from a given dg
+def get_rules(rulebase_type, panorama_obj, dg_obj):
+    """Returns pre or post-rulebase from a given dg
 
     Args:
+        rulebase_type (str): "pre-rulebase or post-rulebase"
+        panorama_obj (panos.panorama.Panorama): Panorama Object containing the DG
         dg_obj (panos.panorama.DeviceGroup): Device group to extract pre-rulebase from
     """
     panorama_obj.add(dg_obj)
-    pre_rb = PreRulebase()
-    dg_obj.add(pre_rb)
-    rules = SecurityRule.refreshall(pre_rb)
+    if rulebase_type == 'pre-rulebase':
+        rb = PreRulebase()
+    elif rulebase_type == 'post-rulebase':
+        rb = PostRulebase()
+    dg_obj.add(rb)
+    rules = SecurityRule.refreshall(rb)
     return rules
+
+
+def get_pre_rules(panorama_obj, dg_obj):
+    return get_rules("pre-rulebase", panorama_obj, dg_obj)
+
+
+def get_post_rules(panorama_obj, dg_obj):
+    return get_rules("post-rulebase", panorama_obj, dg_obj)
+
+
+def get_or_create_tag(tag_name, panorama_obj, dg_obj, color=None, comments=""):
+    tag = dg_obj.add(Tag(name=tag_name, color=color, comments=comments))
+    try:
+        tag.create()
+    except Exception:
+        raise
+    return tag
