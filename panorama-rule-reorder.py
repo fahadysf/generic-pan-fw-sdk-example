@@ -29,11 +29,20 @@ import panoramahelpers
 import json
 
 
+def calculate_rule_risk(security_rule):
+    return None
+
+
+def gen_rule_group_data(rule_group: list):
+    listhash = str(hex(str(rule_group))
+    return
+
+
 def make_shadowed_rule_list(jsdata):
-    shadow_rule_dict = dict()
+    shadow_rule_dict=dict()
     try:
         for item in jsdata['response']['result']['shadow-warnings-count']['entry']['entry']:
-            shadow_rule_dict[item['@name']] = {
+            shadow_rule_dict[item['@name']]={
                 "uuid": item['@uuid'],
                 "shadowcount": int(item['#text'])
             }
@@ -44,20 +53,20 @@ def make_shadowed_rule_list(jsdata):
 
 
 def get_shadow_details(ruledata, panorama, dg, fw):
-    uuid = ruledata['uuid']
-    get_shadowed_rule_details = f"""<show>
+    uuid=ruledata['uuid']
+    get_shadowed_rule_details=f"""<show>
     <shadow-warning><warning-message>
     <device-group>{dg.name}</device-group>
     <device-serial>{fw.serial}</device-serial>
     <uuid>{uuid}</uuid></warning-message>
     </shadow-warning></show>"""
-    res = panoshelpers.get_xml_op(panorama,
+    res=panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rule_details, cmd_xml=False, xml=False)
-    shadow_list = res['response']['result']['warning-msg']['member']
+    shadow_list=res['response']['result']['warning-msg']['member']
     if type(shadow_list) == list:
-        shadow_list = list(map(lambda x: x[8:-1], shadow_list))
+        shadow_list=list(map(lambda x: x[8:-1], shadow_list))
     else:
-        shadow_list = [shadow_list[8:-1]]
+        shadow_list=[shadow_list[8:-1]]
     return shadow_list
 
 
@@ -68,7 +77,7 @@ def main():
     Returns:
         [type]: [description]
     """
-    panorama = panoramahelpers.get_active_panorama(cfgdict)
+    panorama=panoramahelpers.get_active_panorama(cfgdict)
 
     # Execute your logic here.
     # data_str = panoshelpers.get_system_info(panorama)
@@ -76,25 +85,25 @@ def main():
 
     app_log.info(
         f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
-    dglist = panoramahelpers.get_devicegroups(panorama)
+    dglist=panoramahelpers.get_devicegroups(panorama)
     for i, name in enumerate(dglist):
         print(f"{i} - {name}")
     print("Choose your DG Number")
-    dgnum = int(input())
-    dg = dglist[dgnum]
-    fw = dg.children[0]
-    get_shadowed_rules_cmd = f"""<show>
+    dgnum=int(input())
+    dg=dglist[dgnum]
+    fw=dg.children[0]
+    get_shadowed_rules_cmd=f"""<show>
     <shadow-warning>
     <count>
     <device-serial>{fw.serial}</device-serial>
     </count>
     </shadow-warning></show>"""
-    res = panoshelpers.get_xml_op(panorama,
+    res=panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
-    shadowed_rules = make_shadowed_rule_list(res)
+    shadowed_rules=make_shadowed_rule_list(res)
     app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
     for r in shadowed_rules:
-        shadowed_rules[r]['shadow_list'] = [r] + \
+        shadowed_rules[r]['shadow_list']=[r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
         app_log.info(
             f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}"
@@ -114,15 +123,15 @@ def main():
 
 
 if __name__ == '__main__':
-    app_log = panoshelpers.app_log
-    cfgdict = panoshelpers.cfgdict
+    app_log=panoshelpers.app_log
+    cfgdict=panoshelpers.cfgdict
     if 'daemon_mode' in cfgdict.keys() and cfgdict['daemon_mode']:
         try:
             while True:
-                start_time = time.time()
+                start_time=time.time()
                 main()
-                end_time = time.time()
-                elapsed = end_time - start_time
+                end_time=time.time()
+                elapsed=end_time - start_time
                 app_log.info(
                     f"Execution took {elapsed} seconds for all firewalls.")
                 if 'check_interval' in cfgdict.keys():

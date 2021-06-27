@@ -1,7 +1,10 @@
 import panoshelpers
+import panos
 from panos.panorama import DeviceGroup
 from panos.policies import PreRulebase, PostRulebase, SecurityRule
 from panos.objects import Tag
+
+app_log = panoshelpers.app_log
 
 
 def get_active_panorama(cfgdict):
@@ -13,7 +16,7 @@ def get_active_panorama(cfgdict):
             panorama_active = panorama.active()
             cfgdict['panoramas'][panorama_active.hostname] = cfgdict['panoramas'][panorama.hostname]
             app_log.info(
-                f"HA enabled on Panorama. Active firewall is {panorama_active.hostname}")
+                f"HA enabled on Panorama. Active Panorama is {panorama_active.hostname}")
         else:
             panorama_active = panorama
 
@@ -30,7 +33,7 @@ def get_devicegroups(panorama_obj):
     return dglist
 
 
-def get_rules(rulebase_type, panorama_obj, dg_obj):
+def get_rules(rulebase_type, panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup):
     """Returns pre or post-rulebase from a given dg
 
     Args:
@@ -48,11 +51,11 @@ def get_rules(rulebase_type, panorama_obj, dg_obj):
     return rules
 
 
-def get_pre_rules(panorama_obj, dg_obj):
+def get_pre_rules(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup):
     return get_rules("pre-rulebase", panorama_obj, dg_obj)
 
 
-def get_post_rules(panorama_obj, dg_obj):
+def get_post_rules(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup):
     return get_rules("post-rulebase", panorama_obj, dg_obj)
 
 
@@ -63,3 +66,15 @@ def get_or_create_tag(tag_name, panorama_obj, dg_obj, color=None, comments=""):
     except Exception:
         raise
     return tag
+
+
+def get_rule(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup, rule_name: str = ""):
+    pre_rulebase = PreRulebase()
+    post_rulebase = PostRulebase()
+    dg_obj.add(pre_rulebase)
+    dg_obj.add(post_rulebase)
+    rules = SecurityRule.refreshall(pre_rulebase)
+    rule = SecurityRule.find(pre_rulebase, rule_name)
+    if rule == None:
+        rule = SecurityRule.find(post_rulebase, rule_name)
+    return rule
