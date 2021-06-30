@@ -128,8 +128,6 @@ def main():
     shadowed_rules = make_shadowed_rule_list(res)
     # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
     rules = panoramahelpers.get_all_rules(panorama, dg)
-    tags = panoramahelpers.get_all_tags(panorama, dg)
-    tagnames = [tag.name for tag in tags]
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
@@ -141,7 +139,7 @@ def main():
         shadowed_rules[r]['groupcomment'] = comment
         # Create the tag
         tag = panoramahelpers.get_or_create_tag(
-            tagname, panorama, dg, comments=comment)
+            tagname, panorama, dg, comments=comment[:1000])
         app_log.info(
             f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
         for rule in shadowed_rules[r]['shadow_list']:
@@ -158,7 +156,7 @@ def main():
                     applyflag = True
                 elif rule.tag == None:
                     rule.tag = [tag.name]
-                    rule.comment = comment
+                    rule.comment = comment[:1000]
                     applyflag = True
                 else:
                     app_log.warning(
