@@ -27,6 +27,8 @@ import time
 import panoshelpers
 import panoramahelpers
 import json
+import hashlib
+from panos.objects import Tag
 
 
 def calculate_rule_risk(security_rule):
@@ -41,15 +43,18 @@ def calculate_rule_risk(security_rule):
     return None
 
 
-def gen_rule_group_data(rule_group: list):
+def gen_rule_group_identifiers(rule_group: list):
     """[TODO] Implementation needed
     The idea heere is to return rule data in a flattened dictionary format.
 
     Args:
         rule_group (list): [description]
     """
-    listhash = str(hex(str(rule_group)))
-    return None
+    listhashid = hashlib.sha1(str(rule_group).encode('utf-8')).hexdigest()[-8:]
+    tagname = f'shadow-grp-{listhashid}'
+    ruleliststr = str(', '.join(rule_group))
+    groupcomment = f'Shadow Rule Group (Hash: {listhashid}) - Members {ruleliststr}'
+    return tagname, groupcomment
 
 
 def make_shadowed_rule_list(jsdata):
@@ -100,11 +105,17 @@ def main():
     app_log.info(
         f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
     dglist = panoramahelpers.get_devicegroups(panorama)
-    for i, name in enumerate(dglist):
-        print(f"{i} - {name}")
-    print("Choose your DG Number")
-    dgnum = int(input())
-    dg = dglist[dgnum]
+    if 'device_group' in cfgdict['panoramas'][panorama.hostname]:
+        for i, dg in enumerate(dglist):
+            if cfgdict['panoramas'][panorama.hostname]['device_group'] == dg.name:
+                dg = dglist[i]
+    else:
+        for i, name in enumerate(dglist):
+            print(f"{i} - {name}")
+        print("Choose your DG Number")
+        dgnum = int(input())
+        dg = dglist[dgnum]
+    app_log.info(f"Working on Device Group: {dg.name}")
     fw = dg.children[0]
     get_shadowed_rules_cmd = f"""<show>
     <shadow-warning>
@@ -115,23 +126,53 @@ def main():
     res = panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadowed_rules = make_shadowed_rule_list(res)
-    app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+    # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+    rules = panoramahelpers.get_all_rules(panorama, dg)
+    tags = panoramahelpers.get_all_tags(panorama, dg)
+    tagnames = [tag.name for tag in tags]
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
         app_log.info(
-            f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}"
-        )
-
-    # pre_rulebase = panoramahelpers.get_pre_rules(
-    #    panorama, dglist[0])
-    # print(pre_rulebase)
-
-    # Write more logic here (Pending)
-    # --------
-    # Write some actual logic using the panorama instance to execute stuff on
-    # the active panorama.
-    # ##
+            f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}")
+        tagname, comment = gen_rule_group_identifiers(
+            shadowed_rules[r]['shadow_list'])
+        shadowed_rules[r]['grouptag'] = tagname
+        shadowed_rules[r]['groupcomment'] = comment
+        if not tagname in tagnames:
+            t = dg.add(Tag(name=tagname, comments=comment))
+            tags.append(t)
+        else:
+            app_log.info(f"Tag {tagname} already exists. Skipping creation.")
+        app_log.info(
+            f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
+        for rule in shadowed_rules[r]['shadow_list']:
+            for obj in rules:
+                if rule == obj.name:
+                    rule = obj
+            if type(rule) == str:
+                print(f'{rule} not found in rulebase')
+            else:
+                # Create the tags
+                tag = panoramahelpers.get_or_create_tag(
+                    tagname, panorama, dg)
+                applyflag = False
+                if (type(rule.tag) == list) and tag.name not in rule.tag:
+                    rule.tag = rule.tag.append(tag.name)
+                    rule.comment = comment
+                    applyflag = True
+                elif rule.tag == None:
+                    rule.tag = [tag.name]
+                    rule.comment = comment
+                    applyflag = True
+                else:
+                    app_log.warning(
+                        f"Rule {rule.name} already has correct tag: {tagname}")
+                if applyflag:
+                    try:
+                        rule.apply()
+                    except:
+                        raise
     app_log.info(
         f'Process completed on Panorama {panorama.hostname}.')
     return True

@@ -150,7 +150,7 @@ def initialize_panorama_objs(cfgdict):
                 config_dirty = 1
             else:
                 panorama_obj = Panorama(
-                    panorama, api_key=panorama_dict[panorama]['api_key'], timeout=5)
+                    panorama, api_key=panorama_dict[panorama]['api_key'], timeout=120)
 
             if get_config_param(panorama_dict[panorama], 'ha_peer_ip') != None:
                 panorama2 = panorama_dict[panorama]['ha_peer_ip']
