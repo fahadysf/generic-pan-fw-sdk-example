@@ -139,11 +139,9 @@ def main():
             shadowed_rules[r]['shadow_list'])
         shadowed_rules[r]['grouptag'] = tagname
         shadowed_rules[r]['groupcomment'] = comment
-        if not tagname in tagnames:
-            t = dg.add(Tag(name=tagname, comments=comment))
-            tags.append(t)
-        else:
-            app_log.info(f"Tag {tagname} already exists. Skipping creation.")
+        # Create the tag
+        tag = panoramahelpers.get_or_create_tag(
+            tagname, panorama, dg, comments=comment)
         app_log.info(
             f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
         for rule in shadowed_rules[r]['shadow_list']:
@@ -153,9 +151,6 @@ def main():
             if type(rule) == str:
                 print(f'{rule} not found in rulebase')
             else:
-                # Create the tags
-                tag = panoramahelpers.get_or_create_tag(
-                    tagname, panorama, dg)
                 applyflag = False
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag = rule.tag.append(tag.name)
@@ -170,6 +165,8 @@ def main():
                         f"Rule {rule.name} already has correct tag: {tagname}")
                 if applyflag:
                     try:
+                        app_log.info(
+                            f"Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
                     except:
                         raise
