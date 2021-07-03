@@ -53,7 +53,8 @@ def gen_rule_group_identifiers(rule_group: list):
     listhashid = hashlib.sha1(str(rule_group).encode('utf-8')).hexdigest()[-8:]
     tagname = f'shadow-grp-{listhashid}'
     ruleliststr = str(', '.join(rule_group))
-    groupcomment = f'Shadow Rule Group (Hash: {listhashid}) - Members {ruleliststr}'
+    groupcomment = (f'Shadow Rule Group (Hash: {listhashid})'
+                    f' - Members {ruleliststr}')
     return tagname, groupcomment
 
 
@@ -65,9 +66,9 @@ def make_shadowed_rule_list(jsdata):
                 "uuid": item['@uuid'],
                 "shadowcount": int(item['#text'])
             }
-    except:
+    except Exception as e:
         app_log.error(f"JSDATA: {jsdata}")
-        raise
+        raise e
     return shadow_rule_dict
 
 
@@ -154,7 +155,7 @@ def main():
                     rule.tag = rule.tag.append(tag.name)
                     rule.comment = comment
                     applyflag = True
-                elif rule.tag == None:
+                elif rule.tag is None:
                     rule.tag = [tag.name]
                     rule.comment = comment[:1000]
                     applyflag = True
@@ -166,8 +167,8 @@ def main():
                         app_log.info(
                             f"Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
-                    except:
-                        raise
+                    except Exception as e:
+                        raise e
     app_log.info(
         f'Process completed on Panorama {panorama.hostname}.')
     return True

@@ -11,7 +11,7 @@ def get_active_panorama(cfgdict):
     # Cycle through the Panoramas defined in the config.
     panorama_objs = panoshelpers.initialize_panorama_objs(cfgdict)
     for panorama in panorama_objs:
-        if panorama.ha_peer != None:
+        if panorama.ha_peer is not None:
             panorama.refresh_ha_active()
             panorama_active = panorama.active()
             cfgdict['panoramas'][panorama_active.hostname] = cfgdict['panoramas'][panorama.hostname]
@@ -63,7 +63,7 @@ def get_all_rules(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.
     return get_pre_rules(panorama_obj, dg_obj) + get_post_rules(panorama_obj, dg_obj)
 
 
-def get_or_create_tag(tag_name, panorama_obj, dg_obj, color=None, comments=""):
+def get_or_create_tag(tag_name, panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup, color=None, comments=""):
     tag = dg_obj.add(Tag(name=tag_name, color=color, comments=comments))
     try:
         tag.create()
@@ -84,6 +84,6 @@ def get_rule(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.Devic
     dg_obj.add(pre_rulebase)
     dg_obj.add(post_rulebase)
     rule = SecurityRule.find(pre_rulebase, rule_name)
-    if rule == None:
+    if rule is None:
         rule = SecurityRule.find(post_rulebase, rule_name)
     return rule

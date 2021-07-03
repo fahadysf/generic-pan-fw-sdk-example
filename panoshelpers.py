@@ -29,14 +29,14 @@ def load_config(config_file='config.yml'):
         with open(config_file, "r") as ymlfile:
             cfg = yaml.safe_load(ymlfile)
             return cfg
-    except BaseException as e:
+    except Exception as e:
         print("Config file 'config.yml' not found or couldn't be opened.")
-        raise
+        raise e
         exit(1)
 
 
 def get_config_param(dictpath, param):
-    if not param in dictpath.keys():
+    if param not in dictpath.keys():
         return None
     else:
         return dictpath[param]
@@ -70,9 +70,9 @@ def gen_api_key(panorama_addr, username='', password=''):
                 app_log.info(
                     f"API Key generated for firewall {panorama_addr} for username {username}")
                 return panorama_obj, panorama_obj.api_key
-        except BaseException as e:
+        except Exception as e:
             app_log.error("Error generating API Key")
-            app_log.exception(f"Got exception in gen_api_key: {e.message}")
+            app_log.exception(f"Got exception in gen_api_key: {e}")
             exit(1)
 
 
