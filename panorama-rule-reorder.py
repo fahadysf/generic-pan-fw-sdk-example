@@ -90,6 +90,13 @@ def get_shadow_details(ruledata, panorama, dg, fw):
     return shadow_list
 
 
+def get_shadow_count(shadowdict):
+    totalcount = 0
+    for key in shadowdict:
+        totalcount += shadowdict[key]['shadowcount']
+    return totalcount
+
+
 def main():
     """This is a generic example of cycling through HA firewalls and doing
     something via API.
@@ -128,6 +135,9 @@ def main():
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadowed_rules = make_shadowed_rule_list(res)
     # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+    app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
+    app_log.info(
+        f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
     rules = panoramahelpers.get_all_rules(panorama, dg)
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
@@ -168,10 +178,12 @@ def main():
                             f"Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
                     except Exception as e:
-                        raise e
-    app_log.info(
-        f'Process completed on Panorama {panorama.hostname}.')
-    return True
+
+
+x raise e
+app_log.info(
+    f'Process completed on Panorama {panorama.hostname}.')
+return True
 
 
 if __name__ == '__main__':
