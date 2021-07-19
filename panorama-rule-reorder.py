@@ -163,11 +163,11 @@ def main():
                 applyflag = False
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag = rule.tag.append(tag.name)
-                    rule.comment = comment
+                    rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 elif rule.tag is None:
                     rule.tag = [tag.name]
-                    rule.comment = comment[:1000]
+                    rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 else:
                     app_log.warning(
@@ -177,13 +177,12 @@ def main():
                         app_log.info(
                             f"Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
+                        rule.refresh()
                     except Exception as e:
-
-
-x raise e
-app_log.info(
-    f'Process completed on Panorama {panorama.hostname}.')
-return True
+                        raise e
+    app_log.info(
+        f'Process completed on Panorama {panorama.hostname}.')
+    return True
 
 
 if __name__ == '__main__':
