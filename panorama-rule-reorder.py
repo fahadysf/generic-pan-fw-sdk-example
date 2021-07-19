@@ -138,7 +138,6 @@ def main():
     app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
     app_log.info(
         f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
-    rules = panoramahelpers.get_all_rules(panorama, dg)
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
@@ -154,15 +153,18 @@ def main():
         app_log.info(
             f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
         for rule in shadowed_rules[r]['shadow_list']:
+            rules = panoramahelpers.get_all_rules(panorama, dg)
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
+                    rule.refresh()
+                    break
             if type(rule) == str:
                 print(f'{rule} not found in rulebase')
             else:
                 applyflag = False
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
-                    rule.tag = rule.tag.append(tag.name)
+                    rule.tag.append(tag.name)
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 elif rule.tag is None:
@@ -177,7 +179,6 @@ def main():
                         app_log.info(
                             f"Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
-                        rule.refresh()
                     except Exception as e:
                         raise e
     app_log.info(
