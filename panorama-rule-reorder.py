@@ -91,10 +91,11 @@ def get_shadow_details(ruledata, panorama, dg, fw):
 
 
 def get_shadow_count(shadowdict):
-    totalcount = 0
+    ruleset = set()
     for key in shadowdict:
-        totalcount += shadowdict[key]['shadowcount']
-    return totalcount
+        for rulename in shadowdict[key]['shadow_list']:
+            ruleset.add(rulename)
+    return len(ruleset)
 
 
 def main():
