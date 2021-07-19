@@ -134,6 +134,7 @@ def main():
     res = panoshelpers.get_xml_op(panorama,
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadowed_rules = make_shadowed_rule_list(res)
+    rules = panoramahelpers.get_all_rules(panorama, dg)
     # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
     app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
     app_log.info(
@@ -153,7 +154,6 @@ def main():
         app_log.info(
             f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
         for rule in shadowed_rules[r]['shadow_list']:
-            rules = panoramahelpers.get_all_rules(panorama, dg)
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
