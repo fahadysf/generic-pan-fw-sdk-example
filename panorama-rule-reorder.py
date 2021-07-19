@@ -72,7 +72,7 @@ def make_shadowed_rule_list(jsdata):
     return shadow_rule_dict
 
 
-def get_shadow_details(ruledata, panorama, dg, fw):
+def get_shadow_details(ruledata: dict, panorama, dg, fw):
     uuid = ruledata['uuid']
     get_shadowed_rule_details = f"""<show>
     <shadow-warning><warning-message>
@@ -88,6 +88,23 @@ def get_shadow_details(ruledata, panorama, dg, fw):
     else:
         shadow_list = [shadow_list[8:-1]]
     return shadow_list
+
+
+def populate_shadow_group_lists(shadowed_rules: dict, panorama, dg, fw):
+    for i, r in enumerate(shadowed_rules):
+        shadowed_rules[r]['shadow_list'] = [r] + \
+            get_shadow_details(shadowed_rules[r], panorama, dg, fw)
+        app_log.info(
+            f'[{i+1}/{len(shadowed_rules.keys())}] Populating shadow rule list for {r}')
+    return shadowed_rules
+
+
+def get_shadow_count(shadowdict):
+    ruleset = set()
+    for rulename in shadowdict:
+        for rule in shadowdict[rulename]['shadow_list']:
+            ruleset.add(rule)
+    return len(ruleset)
 
 
 def main():
@@ -128,13 +145,18 @@ def main():
                                   cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadowed_rules = make_shadowed_rule_list(res)
     rules = panoramahelpers.get_all_rules(panorama, dg)
-    # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
+
+    # Populate shadow rule group info
     app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
-    for r in shadowed_rules:
-        shadowed_rules[r]['shadow_list'] = [r] + \
-            get_shadow_details(shadowed_rules[r], panorama, dg, fw)
+    shadowed_rules = populate_shadow_group_lists(
+        shadowed_rules, panorama, dg, fw)
+    app_log.info(
+        f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
+
+    # Apply the Tags
+    for i, r in enumerate(shadowed_rules):
         app_log.info(
-            f"Shadow list for {r}: {shadowed_rules[r]['shadow_list']}")
+            f"[{i+1}/{len(shadowed_rules.keys())}] Applying tags on shadow list for {r}: {shadowed_rules[r]['shadow_list']}")
         tagname, comment = gen_rule_group_identifiers(
             shadowed_rules[r]['shadow_list'])
         shadowed_rules[r]['grouptag'] = tagname
@@ -142,18 +164,17 @@ def main():
         # Create the tag
         tag = panoramahelpers.get_or_create_tag(
             tagname, panorama, dg, comments=comment[:1000])
-        app_log.info(
-            f"Adding tag {tagname} and comment to rulegroup: {str(shadowed_rules[r]['shadow_list'])}")
-        for rule in shadowed_rules[r]['shadow_list']:
+        for j, rule in enumerate(shadowed_rules[r]['shadow_list']):
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
                     rule.refresh()
                     break
             if type(rule) == str:
-                print(f'{rule} not found in rulebase')
+                print(f' - {rule} not found in rulebase')
             else:
                 applyflag = False
+                sublistlen = len(shadowed_rules[r]['shadow_list'])
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag.append(tag.name)
                     rule.comment = f"Shadow rule group {tagname}"
@@ -164,11 +185,11 @@ def main():
                     applyflag = True
                 else:
                     app_log.warning(
-                        f"Rule {rule.name} already has correct tag: {tagname}")
+                        f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Rule {rule.name} already has correct tag: {tagname}")
                 if applyflag:
                     try:
                         app_log.info(
-                            f"Applying tag {tag.name} on rule {rule.name}")
+                            f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Applying tag {tag.name} on rule {rule.name}")
                         rule.apply()
                     except Exception as e:
                         raise e

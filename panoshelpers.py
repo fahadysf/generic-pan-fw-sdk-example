@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import getpass
+import coloredlogs
 import logging
 import logging.handlers as lh
 import xml.dom.minidom as minidom
@@ -219,3 +220,5 @@ console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.DEBUG)
 app_log.addHandler(file_handler)
 app_log.addHandler(console_handler)
+
+coloredlogs.install()
