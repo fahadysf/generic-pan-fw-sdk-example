@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 import getpass
@@ -209,6 +208,7 @@ except BaseException as e:
 log_file = os.path.join(cfgdict['log_path'], 'ngfw-control-script.log')
 log_rotation_size = 10 * 1024 * 1024  # Size in bytes (This is 10 MB)
 log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+coloredlogs.install()
 
 file_handler = lh.RotatingFileHandler(
     log_file, maxBytes=log_rotation_size, backupCount=3)
@@ -218,7 +218,6 @@ file_handler.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.DEBUG)
+
 app_log.addHandler(file_handler)
 app_log.addHandler(console_handler)
-
-coloredlogs.install()
