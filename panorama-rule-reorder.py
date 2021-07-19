@@ -90,14 +90,6 @@ def get_shadow_details(ruledata, panorama, dg, fw):
     return shadow_list
 
 
-def get_shadow_count(shadowdict):
-    ruleset = set()
-    for key in shadowdict:
-        for rulename in shadowdict[key]['shadow_list']:
-            ruleset.add(rulename)
-    return len(ruleset)
-
-
 def main():
     """This is a generic example of cycling through HA firewalls and doing
     something via API.
@@ -138,8 +130,6 @@ def main():
     rules = panoramahelpers.get_all_rules(panorama, dg)
     # app_log.debug(json.dumps(shadowed_rules, indent=2, sort_keys=False))
     app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
-    app_log.info(
-        f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
     for r in shadowed_rules:
         shadowed_rules[r]['shadow_list'] = [r] + \
             get_shadow_details(shadowed_rules[r], panorama, dg, fw)
