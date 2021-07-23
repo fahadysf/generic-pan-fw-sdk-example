@@ -26,9 +26,7 @@ https://www.paloaltonetworks.com/legal/script-software-license-1-0.pdf
 import time
 import panoshelpers
 import panoramahelpers
-import json
 import hashlib
-from panos.objects import Tag
 
 
 def calculate_rule_risk(security_rule):
@@ -43,9 +41,25 @@ def calculate_rule_risk(security_rule):
     return None
 
 
+def get_dg(panorama):
+    dglist = panoramahelpers.get_devicegroups(panorama)
+    if 'device_group' in cfgdict['panoramas'][panorama.hostname]:
+        for i, dg in enumerate(dglist):
+            if cfgdict['panoramas'][panorama.hostname]['device_group'] == dg.name:
+                dg = dglist[i]
+    else:
+        for i, name in enumerate(dglist):
+            print(f"{i} - {name}")
+        print("Choose your DG Number")
+        dgnum = int(input())
+        dg = dglist[dgnum]
+    return dg
+
+
 def gen_rule_group_identifiers(rule_group: list):
-    """[TODO] Implementation needed
-    The idea heere is to return rule data in a flattened dictionary format.
+    """
+    This function takes a group of rules as a list and generates a unique hash
+    to represent that group of rules. 
 
     Args:
         rule_group (list): [description]
@@ -58,7 +72,15 @@ def gen_rule_group_identifiers(rule_group: list):
     return tagname, groupcomment
 
 
-def make_shadowed_rule_list(jsdata):
+def make_shadowed_rule_list(panorama, fw):
+    get_shadowed_rules_cmd = f"""<show>
+    <shadow-warning>
+    <count>
+    <device-serial>{fw.serial}</device-serial>
+    </count>
+    </shadow-warning></show>"""
+    jsdata = panoshelpers.get_xml_op(panorama,
+                                     cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
     shadow_rule_dict = dict()
     try:
         for item in jsdata['response']['result']['shadow-warnings-count']['entry']['entry']:
@@ -107,53 +129,8 @@ def get_shadow_count(shadowdict):
     return len(ruleset)
 
 
-def main():
-    """This is a generic example of cycling through HA firewalls and doing
-    something via API.
-
-    Returns:
-        [type]: [description]
-    """
-    panorama = panoramahelpers.get_active_panorama(cfgdict)
-
-    # Execute your logic here.
-    # data_str = panoshelpers.get_system_info(panorama)
-    # print(json.dumps(data_str, indent=4, sort_keys=True))
-
-    app_log.info(
-        f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
-    dglist = panoramahelpers.get_devicegroups(panorama)
-    if 'device_group' in cfgdict['panoramas'][panorama.hostname]:
-        for i, dg in enumerate(dglist):
-            if cfgdict['panoramas'][panorama.hostname]['device_group'] == dg.name:
-                dg = dglist[i]
-    else:
-        for i, name in enumerate(dglist):
-            print(f"{i} - {name}")
-        print("Choose your DG Number")
-        dgnum = int(input())
-        dg = dglist[dgnum]
-    app_log.info(f"Working on Device Group: {dg.name}")
-    fw = dg.children[0]
-    get_shadowed_rules_cmd = f"""<show>
-    <shadow-warning>
-    <count>
-    <device-serial>{fw.serial}</device-serial>
-    </count>
-    </shadow-warning></show>"""
-    res = panoshelpers.get_xml_op(panorama,
-                                  cmd=get_shadowed_rules_cmd, cmd_xml=False, xml=False)
-    shadowed_rules = make_shadowed_rule_list(res)
+def apply_shadow_group_tags(shadowed_rules, panorama, dg):
     rules = panoramahelpers.get_all_rules(panorama, dg)
-
-    # Populate shadow rule group info
-    app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
-    shadowed_rules = populate_shadow_group_lists(
-        shadowed_rules, panorama, dg, fw)
-    app_log.info(
-        f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
-
-    # Apply the Tags
     for i, r in enumerate(shadowed_rules):
         app_log.info(
             f"[{i+1}/{len(shadowed_rules.keys())}] Applying tags on shadow list for {r}: {shadowed_rules[r]['shadow_list']}")
@@ -193,9 +170,37 @@ def main():
                         rule.apply()
                     except Exception as e:
                         raise e
-    app_log.info(
-        f'Process completed on Panorama {panorama.hostname}.')
-    return True
+
+
+def main():
+    try:
+        panorama = panoramahelpers.get_active_panorama(cfgdict)
+        app_log.info(
+            f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
+
+        dg = get_dg(panorama)
+        app_log.info(f"Working on Device Group: {dg.name}")
+        fw = dg.children[0]
+        shadowed_rules = make_shadowed_rule_list(panorama, fw)
+
+        # Populate shadow rule group info
+        app_log.info(f"Total Shadow rule groups: {len(shadowed_rules.keys())}")
+        shadowed_rules = populate_shadow_group_lists(
+            shadowed_rules, panorama, dg, fw)
+        app_log.info(
+            f"Total Rules in shadow groups: {get_shadow_count(shadowed_rules)}")
+
+        # Apply the Tags
+        apply_shadow_group_tags(shadowed_rules, panorama, dg)
+        app_log.info(
+            f'Process completed on Panorama {panorama.hostname}.')
+        return True
+
+    except KeyboardInterrupt:
+        print("Ctrl+C pressed. Exiting")
+        exit(1)
+    except BaseException:
+        raise
 
 
 if __name__ == '__main__':
