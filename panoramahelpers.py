@@ -2,7 +2,7 @@ import panoshelpers
 import panos
 from panos.panorama import DeviceGroup
 from panos.policies import PreRulebase, PostRulebase, SecurityRule
-from panos.objects import Tag
+from panos.objects import Tag, AddressObject, AddressGroup, ServiceObject, ServiceGroup
 
 app_log = panoshelpers.app_log
 
@@ -78,7 +78,7 @@ def get_all_tags(panorama_obj, dg_obj):
     return tags
 
 
-def get_rule(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup, rule_name: str = ""):
+def get_rule(dg_obj: panos.panorama.DeviceGroup, rule_name: str = ""):
     pre_rulebase = PreRulebase()
     post_rulebase = PostRulebase()
     dg_obj.add(pre_rulebase)
@@ -87,3 +87,34 @@ def get_rule(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.Devic
     if rule is None:
         rule = SecurityRule.find(post_rulebase, rule_name)
     return rule
+
+
+def get_address_objects(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup = None, merge_shared: bool = False):
+    address_objs_dict = dict()
+    address_objs = list()
+    if merge_shared or (dg_obj == None):
+        address_objs += AddressObject.refreshall(panorama_obj)
+        for item in address_objs:
+            address_objs_dict[item.name] = {
+                "object": item,
+                "value": item.value,
+                "container": "shared"
+            }
+    if dg_obj:
+        address_objs = AddressObject.refreshall(dg_obj)
+        for item in address_objs:
+            address_objs_dict[item.name] = {
+                "object": item,
+                "value": item.value,
+                "container": dg_obj.name,
+            }
+    return address_objs_dict
+
+
+def get_address(name: str, panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup = None):
+    address_obj_dict = get_address_objects(
+        panorama_obj, dg_obj=dg_obj, merge_shared=True)
+    if name in address_obj_dict.keys():
+        return address_obj_dict[name]
+    else:
+        return None
