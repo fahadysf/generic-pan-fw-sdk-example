@@ -188,8 +188,7 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
         tag = panoramahelpers.get_or_create_tag(
             tagname, panorama, dg, comments=comment[:1000])
         for j, rule in enumerate(shadowed_rules[r]['shadow_list']):
-            # Calculate the Risk Rating For the Rule
-            risk_tag = f"risk-{calculate_rule_risk(rule, panorama, dg)}"
+
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
@@ -199,6 +198,8 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
                 print(f' - {rule} not found in rulebase')
             else:
                 applyflag = False
+                # Calculate the Risk Rating For the Rule
+                risk_tag = f"risk-{calculate_rule_risk(rule, panorama, dg)}"
                 sublistlen = len(shadowed_rules[r]['shadow_list'])
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag.append(tag.name)
