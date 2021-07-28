@@ -29,7 +29,7 @@ import panoramahelpers
 import hashlib
 
 
-def calculate_rule_risk(security_rule):
+def calculate_rule_risk(security_rule, panorama, dg):
     """[TODO] Impelementation Needed
 
     Args:
@@ -38,7 +38,53 @@ def calculate_rule_risk(security_rule):
     Returns:
         [type]: [description]
     """
-    return None
+    src_any = False
+    dst_any = False
+    service_any = False
+    service_default = False
+    appid_any = False
+    risk = 0
+    if security_rule.source == ['any']:
+        src_any = True
+    if security_rule.destination == ['any']:
+        dst_any = True
+    """
+    sources = [panoramahelpers.get_address(
+        item, panorama, dg_obj=dg) for item in security_rule.source]
+    destinations = [panoramahelpers.get_address(item, panorama, dg_obj=dg)
+                    for item in security_rule.destination]
+    """
+    if security_rule.service == ['application-default']:
+        service_default = True
+    elif security_rule.service == ['any']:
+        service_any = True
+    if security_rule.application == ['any']:
+        appid_any = True
+
+    if ((src_any and dst_any) and (service_any or service_default) and appid_any):
+        risk = 10
+    elif (((src_any and not dst_any) or (dst_any and not src_any)) and (service_any or service_default) and appid_any):
+        risk = 9.5
+    elif ((not src_any and not dst_any) and (service_any or service_default) and appid_any):
+        risk = 9
+    elif ((src_any and dst_any) and not (service_any or service_default) and appid_any):
+        risk = 8
+    elif ((src_any and dst_any) and service_any and not appid_any):
+        risk = 8
+    elif ((not src_any and dst_any) and not (service_any or service_default) and appid_any):
+        risk = 7
+    elif ((not src_any and dst_any) and service_any and not appid_any):
+        risk = 7
+    elif ((src_any and not dst_any) and not (service_any or service_default) and appid_any):
+        risk = 6
+    elif ((src_any and not dst_any) and service_any and not appid_any):
+        risk = 6
+    elif ((not src_any and not dst_any) and not (service_any or service_default) and appid_any):
+        risk = 5
+    elif ((not src_any and not dst_any) and service_any and not appid_any):
+        risk = 5
+
+    return risk
 
 
 def get_dg(panorama):
@@ -142,6 +188,7 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
         tag = panoramahelpers.get_or_create_tag(
             tagname, panorama, dg, comments=comment[:1000])
         for j, rule in enumerate(shadowed_rules[r]['shadow_list']):
+            # Calculate the Risk Rating For the Rule
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
@@ -152,12 +199,19 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
             else:
                 applyflag = False
                 sublistlen = len(shadowed_rules[r]['shadow_list'])
+                risk_tag = f"risk-{calculate_rule_risk(rule, panorama, dg)}"
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag.append(tag.name)
+                    if risk_tag not in rule.tag:
+                        # Remove existing risk tag if present
+                        for t in rule.tag:
+                            if t.startswith("risk-"):
+                                rule.tag.pop(t)
+                        rule.tag.append(risk_tag)
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 elif rule.tag is None:
-                    rule.tag = [tag.name]
+                    rule.tag = [tag.name, risk_tag]
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 else:
@@ -176,8 +230,8 @@ def main():
     try:
         panorama = panoramahelpers.get_active_panorama(cfgdict)
         app_log.info(
-            f'Doing something -- UPDATE THIS MESSAGE OBVIOUSLY -- on Panorama {panorama.hostname}')
-
+            f'Connecting and getting list of Device Groups from Panorama {panorama.hostname}')
+        panoramahelpers.setup_risk_tags(panorama)
         dg = get_dg(panorama)
         app_log.info(f"Working on Device Group: {dg.name}")
         fw = dg.children[0]

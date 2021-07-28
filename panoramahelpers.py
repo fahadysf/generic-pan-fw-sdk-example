@@ -72,10 +72,24 @@ def get_or_create_tag(tag_name, panorama_obj: panos.panorama.Panorama, dg_obj: p
     return tag
 
 
-def get_all_tags(panorama_obj, dg_obj):
+def get_all_tags(panorama_obj: panos.panorama.Panorama, dg_obj: panos.panorama.DeviceGroup):
     panorama_obj.add(dg_obj)
     tags = Tag.refreshall(dg_obj)
     return tags
+
+
+def setup_risk_tags(panorama_obj: panos.panorama.Panorama):
+    risk_levels = [10, 9.5, 9, 8, 7, 6, 5, 4]
+    tag_colors = [42, 19, 1, 20, 6, 21, 15, 4]
+    tag_dict = dict()
+    for n, risk_level in enumerate(risk_levels):
+        tag = panorama_obj.add(Tag(
+            name=f"risk-{risk_level}", color=f"color{tag_colors[n]}", comments=f"Risk Level {risk_level}"))
+        try:
+            tag.apply()
+        except Exception:
+            tag.create()
+    return
 
 
 def get_rule(dg_obj: panos.panorama.DeviceGroup, rule_name: str = ""):
