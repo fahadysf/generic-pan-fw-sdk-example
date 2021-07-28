@@ -189,6 +189,7 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
             tagname, panorama, dg, comments=comment[:1000])
         for j, rule in enumerate(shadowed_rules[r]['shadow_list']):
             # Calculate the Risk Rating For the Rule
+            risk_tag = f"risk-{calculate_rule_risk(rule, panorama, dg)}"
             for obj in rules:
                 if rule == obj.name:
                     rule = obj
@@ -199,7 +200,6 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
             else:
                 applyflag = False
                 sublistlen = len(shadowed_rules[r]['shadow_list'])
-                risk_tag = f"risk-{calculate_rule_risk(rule, panorama, dg)}"
                 if (type(rule.tag) == list) and tag.name not in rule.tag:
                     rule.tag.append(tag.name)
                     if risk_tag not in rule.tag:
@@ -210,17 +210,23 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
                         rule.tag.append(risk_tag)
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
+                elif (tag.name in rule.tag) and not risk_tag in rule.tag:
+                    for t in rule.tag:
+                        if t.startswith("risk-"):
+                            rule.tag.pop(t)
+                    rule.tag.append(risk_tag)
+                    applyflag = True
                 elif rule.tag is None:
                     rule.tag = [tag.name, risk_tag]
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 else:
                     app_log.warning(
-                        f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Rule {rule.name} already has correct tag: {tagname}")
+                        f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Rule {rule.name} already has correct tags: {tagname}")
                 if applyflag:
                     try:
                         app_log.info(
-                            f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Applying tag {tag.name} on rule {rule.name}")
+                            f"[{i+1}/{len(shadowed_rules.keys())}] - [{j+1}/{sublistlen}] Applying tag {tag.name} and {risk_tag} on rule {rule.name}")
                         rule.apply()
                     except Exception as e:
                         raise e
