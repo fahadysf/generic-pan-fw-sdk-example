@@ -211,15 +211,15 @@ def apply_shadow_group_tags(shadowed_rules, panorama, dg):
                         rule.tag.append(risk_tag)
                     rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
+                elif rule.tag is None:
+                    rule.tag = [tag.name, risk_tag]
+                    rule.comment = f"Shadow rule group {tagname}"
+                    applyflag = True
                 elif (tag.name in rule.tag) and not risk_tag in rule.tag:
                     for t in rule.tag:
                         if t.startswith("risk-"):
                             rule.tag.pop(t)
                     rule.tag.append(risk_tag)
-                    applyflag = True
-                elif rule.tag is None:
-                    rule.tag = [tag.name, risk_tag]
-                    rule.comment = f"Shadow rule group {tagname}"
                     applyflag = True
                 else:
                     app_log.warning(
