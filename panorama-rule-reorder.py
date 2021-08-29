@@ -43,7 +43,7 @@ def calculate_rule_risk(security_rule, panorama, dg):
     service_any = False
     service_default = False
     appid_any = False
-    risk = 0
+    risk = 4
     if security_rule.source == ['any']:
         src_any = True
     if security_rule.destination == ['any']:
