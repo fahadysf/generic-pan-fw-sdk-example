@@ -13,9 +13,9 @@ log_path: './logs'          # Location of log files for this script
 daemon_mode: false          # run as a continous process and repeat when finished
 check_interval: 60          # Number of seconds to wait before re-running (30 is default)
 
-# Firewalls to be monitored.
-# Note 1: In case of HA firewalls, only one of the firewalls should be defined
-#         in the HA section and the peer firewall IP/Hostname should be 
+# Panoramas to be worked on
+# Note 1: In case of HA panoramas, only one of the firewalls should be defined
+#         in the HA section and the peer panorama IP/Hostname should be 
 #         provided in the ha_peer_ip field under the firewall entry
 
 
